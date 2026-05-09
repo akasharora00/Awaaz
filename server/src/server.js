@@ -31,9 +31,10 @@ process.on("uncaughtException", (error) => {
   console.error("[process] Uncaught Exception:", error);
 });
 
-httpServer.listen(port, () => {
-  // eslint-disable-next-line no-console
-  console.log(`[server] Awaaz server running on port ${port}`);
-  // eslint-disable-next-line no-console
-  console.log(`[server] Allowed CLIENT_URL: ${process.env.CLIENT_URL || "http://localhost:5173"}`);
-});
+// httpServer.listen(port, () => {
+//   // eslint-disable-next-line no-console
+//   console.log(`[server] Awaaz server running on port ${port}`);
+//   // eslint-disable-next-line no-console
+//   console.log(`[server] Allowed CLIENT_URL: ${process.env.CLIENT_URL || "http://localhost:5173"}`);
+// });
+export default app;
