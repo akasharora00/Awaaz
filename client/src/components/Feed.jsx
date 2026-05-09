@@ -1,7 +1,7 @@
 import { motion } from "framer-motion";
 import PostCard from "./PostCard";
 
-const Feed = ({ posts, onLike, onComment, isPostingComment, loading }) => {
+const Feed = ({ posts, clientId, onLike, onComment, isPostingComment, loading }) => {
   return (
     <section id="feed" className="px-4 py-10 sm:px-6">
       <div className="mx-auto max-w-3xl">
@@ -26,6 +26,7 @@ const Feed = ({ posts, onLike, onComment, isPostingComment, loading }) => {
               >
                 <PostCard
                   post={post}
+                  clientId={clientId}
                   onLike={onLike}
                   onComment={onComment}
                   isPostingComment={isPostingComment}

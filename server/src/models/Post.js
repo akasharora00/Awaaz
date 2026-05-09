@@ -13,6 +13,10 @@ const postSchema = new mongoose.Schema(
       type: Number,
       default: 0,
       min: 0
+    },
+    likedBy: {
+      type: [String],
+      default: []
     }
   },
   {

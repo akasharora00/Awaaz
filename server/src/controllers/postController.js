@@ -25,11 +25,24 @@ const logError = (label, error, meta = {}) => {
 
 const isValidObjectId = (value) => mongoose.Types.ObjectId.isValid(value);
 
+const extractContentField = (body) => {
+  if (!body || typeof body !== "object") return "";
+  const candidates = [body.content, body.message, body.text, body.post];
+  const firstString = candidates.find((value) => typeof value === "string");
+  return firstString || "";
+};
+
 const buildPostWithComments = async (postDocOrObj) => {
   const postId = postDocOrObj?._id;
   const comments = await Comment.find({ postId }).sort({ createdAt: -1 }).lean();
   const post = typeof postDocOrObj.toObject === "function" ? postDocOrObj.toObject() : postDocOrObj;
   return { ...post, comments };
+};
+
+const getClientId = (req) => {
+  const rawId = req.headers["x-awaaz-client-id"];
+  if (typeof rawId !== "string") return "";
+  return rawId.trim().slice(0, 120);
 };
 
 export const getPosts = async (_req, res) => {
@@ -67,21 +80,26 @@ export const createPost = async (req, res) => {
   try {
     logRequest("POST /api/posts - start", {
       hasBody: Boolean(req.body),
-      contentType: req.headers["content-type"]
+      contentType: req.headers["content-type"],
+      bodyKeys: Object.keys(req.body || {})
     });
 
-    const { content } = req.body;
-    if (typeof content !== "string") {
+    const extractedContent = extractContentField(req.body);
+    if (typeof extractedContent !== "string") {
       return res.status(400).json({
         success: false,
-        message: "Post content must be a string."
+        message: "Post content must be a string.",
+        expected: "content",
+        acceptedFields: ["content", "message", "text", "post"]
       });
     }
-    const trimmedContent = content.trim();
+    const trimmedContent = extractedContent.trim();
     if (!trimmedContent) {
       return res.status(400).json({
         success: false,
-        message: "Post content is required."
+        message: "Post content is required.",
+        expected: "content",
+        acceptedFields: ["content", "message", "text", "post"]
       });
     }
     if (trimmedContent.length > 500) {
@@ -91,7 +109,7 @@ export const createPost = async (req, res) => {
       });
     }
 
-    const createdPost = await Post.create({ content: trimmedContent });
+    const createdPost = await Post.create({ content: trimmedContent, likes: 0, likedBy: [] });
     const payload = { ...createdPost.toObject(), comments: [] };
     ioInstance?.emit("post:created", payload);
     logRequest("POST /api/posts - success", { postId: createdPost._id.toString() });
@@ -104,7 +122,8 @@ export const createPost = async (req, res) => {
     logError("POST /api/posts - failure", error, { body: req.body });
     return res.status(500).json({
       success: false,
-      message: "Could not create post."
+      message: "Could not create post.",
+      error: error?.message
     });
   }
 };
@@ -112,26 +131,51 @@ export const createPost = async (req, res) => {
 export const likePost = async (req, res) => {
   try {
     const { id } = req.params;
-    logRequest("PATCH /api/posts/:id/like - start", { id });
+    const clientId = getClientId(req);
+    logRequest("PATCH /api/posts/:id/like - start", { id, hasClientId: Boolean(clientId) });
     if (!isValidObjectId(id)) {
       return res.status(400).json({
         success: false,
         message: "Invalid post id."
       });
     }
-    const post = await Post.findByIdAndUpdate(id, { $inc: { likes: 1 } }, { new: true });
+    if (!clientId) {
+      return res.status(400).json({
+        success: false,
+        message: "Missing client id for like toggle."
+      });
+    }
+
+    const post = await Post.findById(id);
     if (!post) {
       return res.status(404).json({
         success: false,
         message: "Post not found."
       });
     }
+
+    const alreadyLiked = post.likedBy.includes(clientId);
+    if (alreadyLiked) {
+      post.likedBy = post.likedBy.filter((item) => item !== clientId);
+      post.likes = Math.max(0, post.likes - 1);
+    } else {
+      post.likedBy.push(clientId);
+      post.likes += 1;
+    }
+    await post.save();
+
     const payload = await buildPostWithComments(post);
     ioInstance?.emit("post:updated", payload);
-    logRequest("PATCH /api/posts/:id/like - success", { id });
+    logRequest("PATCH /api/posts/:id/like - success", {
+      id,
+      likes: payload.likes,
+      liked: !alreadyLiked
+    });
     return res.status(200).json({
       success: true,
-      message: "Support sent.",
+      message: alreadyLiked ? "Support removed." : "Support sent.",
+      liked: !alreadyLiked,
+      likes: payload.likes,
       post: payload
     });
   } catch (error) {

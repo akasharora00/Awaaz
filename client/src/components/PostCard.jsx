@@ -2,8 +2,9 @@ import { useState } from "react";
 import { formatDistanceToNow } from "../utils/time";
 import CommentBox from "./CommentBox";
 
-const PostCard = ({ post, onLike, onComment, isPostingComment }) => {
+const PostCard = ({ post, clientId, onLike, onComment, isPostingComment }) => {
   const [showComments, setShowComments] = useState(false);
+  const isLiked = Boolean(clientId && post.likedBy?.includes(clientId));
 
   return (
     <article className="glass rounded-2xl p-5">
@@ -15,9 +16,13 @@ const PostCard = ({ post, onLike, onComment, isPostingComment }) => {
       <div className="mt-4 flex gap-2">
         <button
           onClick={() => onLike(post._id)}
-          className="rounded-full border border-white/10 px-3 py-1.5 text-xs text-slate-200 transition hover:bg-white/10"
+          className={`rounded-full border px-3 py-1.5 text-xs transition ${
+            isLiked
+              ? "border-indigo-300 bg-indigo-500/30 text-indigo-100"
+              : "border-white/10 text-slate-200 hover:bg-white/10"
+          }`}
         >
-          ❤️ Support ({post.likes})
+          {isLiked ? "💜 Supported" : "❤️ Support"} ({post.likes})
         </button>
         <button
           onClick={() => setShowComments((prev) => !prev)}
