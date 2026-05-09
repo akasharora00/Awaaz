@@ -1,4 +1,5 @@
 # Awaaz
+<<<<<<< HEAD
 
 A modern full-stack anonymous emotional sharing platform designed as a calm, non-judgmental safe space.
 
@@ -96,3 +97,6 @@ When users write distress terms (suicide/self-harm/depression patterns), fronten
 
 > You matter. Please talk to someone. Help is available.  
 > Kiran Helpline: 1800-599-0019
+=======
+Awaaz is an anonymous emotional sharing platform where people can freely express their thoughts, stress, and feelings without revealing their identity. It provides a safe and supportive space for users to connect through positive interactions and emotional support in a calm, non-judgmental environment.
+>>>>>>> f6a5a5c023105a2594eb3c356f028e4d1b8bb8ed
